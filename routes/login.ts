@@ -12,7 +12,7 @@ export function login(router: Router) {
       type: "json",
     }).value;
 
-    const sql0 = { email: params.email };
+    const sql0 = { email: params.email, status: true };
     const data0: Document | undefined = await queryOne(sql0, "user");
     if (data0 != undefined) {
       ctx.response.body = {
@@ -38,6 +38,8 @@ export function login(router: Router) {
         password: params.password,
         img: imgName,
         tag: params.tag,
+        online: false,
+        status: true,
       };
       const data: any = await add(sql, "user");
       ctx.response.body = {
@@ -50,7 +52,7 @@ export function login(router: Router) {
     const params: any = await ctx.request.body({
       type: "json",
     }).value;
-    const sql = { email: params.email };
+    const sql = { email: params.email, status: true };
     const data: Document | undefined = await queryOne(sql, "user");
     if (data) {
       if (data.password == params.password) {

@@ -18,7 +18,7 @@ export function system(router: Router): void {
   router
     .get("/getUserList", verifyToken, async (ctx): Promise<void> => { // 获取用户列表
       const params: any = helpers.getQuery(ctx);
-      let sql: any = {};
+      let sql: any = { status: true };
       for (let key in params) {
         if (key == "username") {
           sql = { ...sql, [key]: { "$regex": params[key] } };
@@ -38,6 +38,7 @@ export function system(router: Router): void {
           };
         });
         const sql2 = {
+          status: true,
           $or: list,
         };
         const data2: Document[] = await queryAll(sql2, "tag");
@@ -68,6 +69,64 @@ export function system(router: Router): void {
         "code": 200,
         "rows": data,
         "msg": "查询成功",
+      };
+    }).post(
+      "/editUser",
+      verifyToken,
+      async (ctx): Promise<void> => { // 修改用户信息
+        const params: any = await ctx.request.body({
+          type: "json",
+        }).value;
+        const param1 = { id: parseInt(params.id) };
+        const param2: any = {};
+        if (params.username) {
+          param2.username = params.username;
+        } 
+        if (params.password) {
+          param2.password = params.password;
+        } 
+        if (params.tag) {
+          param2.tag = params.tag;
+        } 
+        if (params.online) {
+          param2.online = params.online;
+        }
+        if (params.img) {
+          try {
+            const imgName: string = params.id + "_" + Date.now() + ".jpg";
+            const path = `${Deno.cwd()}/public/headImg/${imgName}`;
+            const base64: any = params.img.replace(
+              /^data:image\/\w+;base64,/,
+              "",
+            );
+            const dataBuffer: Uint8Array = decode(base64);
+            await Deno.writeFile(path, dataBuffer);
+            param2.img = imgName;
+            const data = await update(param1, param2, "user");
+            ctx.response.body = {
+              "code": 200,
+              "rows": data,
+              "msg": "修改成功",
+            };
+          } catch (_) {}
+        } else {
+          const data = await update(param1, param2, "user");
+          ctx.response.body = {
+            "code": 200,
+            "rows": data,
+            "msg": "修改成功",
+          };
+        }
+      },
+    ).get("/deleteUser", verifyToken, async (ctx): Promise<void> => { // 删除用户
+      const params: any = helpers.getQuery(ctx);
+      const param1 = { _id: new ObjectId(params._id) };
+      const param2 = { status: false };
+      console.log(param1, param2);
+      await update(param1, param2, "user");
+      ctx.response.body = {
+        "code": 200,
+        "msg": "删除成功",
       };
     }).post("/updateImg", verifyToken, async (ctx): Promise<void> => { // 修改头像
       const params: any = await ctx.request.body({
@@ -100,7 +159,7 @@ export function system(router: Router): void {
       }
     }).get("/getTagList", async (ctx): Promise<void> => { // 获取标签列表
       const params: any = helpers.getQuery(ctx);
-      let sql: any = {};
+      let sql: any = { status: true };
       for (let key in params) {
         if (key == "name") {
           sql = { ...sql, [key]: { "$regex": params[key] } };
@@ -132,6 +191,7 @@ export function system(router: Router): void {
         id: id + 1,
         name: params.name,
         color: params.color,
+        status: true,
       };
       const data: any = await add(sql, "tag");
       ctx.response.body = {
@@ -161,11 +221,11 @@ export function system(router: Router): void {
       },
     ).get("/deleteTag", verifyToken, async (ctx): Promise<void> => { // 删除标签
       const params: any = helpers.getQuery(ctx);
-      const sql = { _id: new ObjectId(params._id) };
-      const data: number = await deleteData(sql, "tag");
+      const param1 = { _id: new ObjectId(params._id) };
+      const param2 = { status: false };
+      await update(param1, param2, "tag");
       ctx.response.body = {
         "code": 200,
-        "rows": data,
         "msg": "删除成功",
       };
     });
