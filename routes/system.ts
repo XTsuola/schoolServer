@@ -122,7 +122,7 @@ export function system(router: Router): void {
       const params: any = helpers.getQuery(ctx);
       const param1 = { _id: new ObjectId(params._id) };
       const param2 = { status: false };
-      console.log(param1, param2);
+
       await update(param1, param2, "user");
       ctx.response.body = {
         "code": 200,
