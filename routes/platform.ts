@@ -176,6 +176,7 @@ export function platform(router: Router): void {
     const res: any = await queryOne(sql, "user_relation");
     if (res) {
       await deleteData({ _id: new ObjectId(res._id) }, "user_relation");
+      await deleteData({ id: new ObjectId(res._id) }, "user_message");
     }
     ctx.response.body = {
       "code": 200,
@@ -239,5 +240,238 @@ export function platform(router: Router): void {
         "msg": "修改成功",
       };
     },
-  );
+  ).get("/getRandomFriend", verifyToken, async (ctx): Promise<void> => { // 随机获取一个好友
+    const params: any = helpers.getQuery(ctx);
+    const res: any = await queryAll({}, "user");
+    let sql: any = { ids: parseInt(params.id) };
+    let sql2: any = { requestor: parseInt(params.id) };
+    const res2: Document[] = await queryAll(sql, "user_relation");
+    const res3: Document[] = await queryAll(sql2, "user_accept");
+    let list: any = [];
+    for (let i = 0; i < res2.length; i++) {
+      list = [...list, ...res2[i].ids];
+    }
+    const list2 = list.filter((item: any) => item != parseInt(params.id));
+    list2.push(parseInt(params.id));
+    let data = res.filter((item: any) =>
+      list2.findIndex((item2: any) => item2 == item.id) == -1
+    );
+    const list3: any = res3.map((item: any) => item.recipient);
+    data = data.filter((item: any) =>
+      list3.findIndex((item2: number) => item2 == item.id) == -1
+    );
+    const count = data.length;
+    let data2: any = [];
+    if (count > 0) {
+      const ind = Math.round(Math.random() * (count - 1));
+      const arr = data[ind].tag.map((item: number) => {
+        return {
+          id: item,
+        };
+      });
+      const sql2 = {
+        status: true,
+        $or: arr,
+      };
+      const data3: Document[] = await queryAll(sql2, "tag");
+      data2 = [{
+        id: data[ind].id,
+        email: data[ind].email,
+        username: data[ind].username,
+        img: data[ind].img,
+        tag: data[ind].tag,
+        tagObj: data3,
+      }];
+    }
+    ctx.response.body = {
+      "code": 200,
+      "rows": data2,
+      "msg": "查询成功",
+    };
+  }).get("/getInterestFriend", verifyToken, async (ctx): Promise<void> => { // 按兴趣获取一个好友
+    const params: any = helpers.getQuery(ctx);
+    const res0: any = await queryOne({ id: parseInt(params.id) }, "user");
+    const list0: any = [];
+    for (let i = 0; i < res0.tag.length; i++) {
+      list0.push({
+        tag: parseInt(res0.tag[i]),
+      });
+    }
+    const sql0 = { $or: list0 };
+    const res: any = await queryAll(sql0, "user");
+    let sql: any = { ids: parseInt(params.id) };
+    let sql2: any = { requestor: parseInt(params.id) };
+    const res2: Document[] = await queryAll(sql, "user_relation");
+    const res3: Document[] = await queryAll(sql2, "user_accept");
+    let list: any = [];
+    for (let i = 0; i < res2.length; i++) {
+      list = [...list, ...res2[i].ids];
+    }
+    const list2 = list.filter((item: any) => item != parseInt(params.id));
+    list2.push(parseInt(params.id));
+    let data = res.filter((item: any) =>
+      list2.findIndex((item2: any) => item2 == item.id) == -1
+    );
+    const list3: any = res3.map((item: any) => item.recipient);
+    data = data.filter((item: any) =>
+      list3.findIndex((item2: number) => item2 == item.id) == -1
+    );
+    const count = data.length;
+    let data2: any = [];
+    if (count > 0) {
+      const ind = Math.round(Math.random() * (count - 1));
+      const arr = data[ind].tag.map((item: number) => {
+        return {
+          id: item,
+        };
+      });
+      const sql2 = {
+        status: true,
+        $or: arr,
+      };
+      const data3: Document[] = await queryAll(sql2, "tag");
+      data2 = [{
+        id: data[ind].id,
+        email: data[ind].email,
+        username: data[ind].username,
+        img: data[ind].img,
+        tag: data[ind].tag,
+        tagObj: data3,
+      }];
+    }
+    ctx.response.body = {
+      "code": 200,
+      "rows": data2,
+      "msg": "查询成功",
+    };
+  }).get("/getAccurateFriend", verifyToken, async (ctx): Promise<void> => { // 按账号搜索用户
+    const params: any = helpers.getQuery(ctx);
+    const sql = { email: params.email };
+    const res: any = await queryOne(sql, "user");
+    if (res) {
+      if (res.id == parseInt(params.id)) {
+        ctx.response.body = {
+          "code": 500,
+          "msg": "那是你自己！",
+        };
+      } else {
+        let status = 0;
+        let list: any = [];
+        const data1 = await queryAll(
+          { ids: parseInt(params.id) },
+          "user_relation",
+        );
+        for (let i = 0; i < data1.length; i++) {
+          list = [...list, ...data1[i].ids];
+        }
+        const list2 = list.filter((item: any) => item != parseInt(params.id));
+
+        let list3: any = [];
+        const data2 = await queryAll(
+          { requestor: parseInt(params.id) },
+          "user_accept",
+        );
+        for (let i = 0; i < data2.length; i++) {
+          list3 = [...list3, data2[i].recipient];
+        }
+        if (list3.findIndex((item: any) => item == res.id) != -1) {
+          status = 2;
+        } else if (list2.findIndex((item: any) => item == res.id) != -1) {
+          status = 1;
+        }
+        const arr = res.tag.map((item: number) => {
+          return {
+            id: item,
+          };
+        });
+        const sql3 = {
+          status: true,
+          $or: arr,
+        };
+        const data3: Document[] = await queryAll(sql3, "tag");
+        const data4: any = [{
+          id: res.id,
+          email: res.email,
+          username: res.username,
+          img: res.img,
+          tag: res.tag,
+          tagObj: data3,
+          status: status,
+        }];
+        ctx.response.body = {
+          "code": 200,
+          "rows": data4,
+          "msg": "查询成功",
+        };
+      }
+    } else {
+      ctx.response.body = {
+        "code": 500,
+        "msg": "无该账号用户",
+      };
+    }
+  }).get("/getMyAskRequestList", verifyToken, async (ctx): Promise<void> => { // 我的申请以及回复表
+    const params: any = helpers.getQuery(ctx);
+    const data: any = await queryAll(
+      {
+        $or: [{ requestor: parseInt(params.id) }, {
+          recipient: parseInt(params.id),
+        }],
+      },
+      "user_accept",
+    );
+    const data1: any = [];
+    const data2: any = [];
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].recipient == params.id) {
+        const res: any = await queryOne({ id: data[i].requestor }, "user");
+        const list = res.tag.map((item: number) => {
+          return {
+            id: item,
+          };
+        });
+        const sql2 = {
+          status: true,
+          $or: list,
+        };
+        const list2: Document[] = await queryAll(sql2, "tag");
+        data1.push({
+          id: res.id,
+          email: res.email,
+          username: res.username,
+          img: res.img,
+          tag: res.tag,
+          tagObj: list2,
+          testInfo: data[i].askInfo
+        });
+      } else if (data[i].requestor == params.id) {
+        const res: any = await queryOne({ id: data[i].recipient }, "user");
+        const list = res.tag.map((item: number) => {
+          return {
+            id: item,
+          };
+        });
+        const sql2 = {
+          status: true,
+          $or: list,
+        };
+        const list2: Document[] = await queryAll(sql2, "tag");
+        data2.push({
+          id: res.id,
+          email: res.email,
+          username: res.username,
+          img: res.img,
+          tag: res.tag,
+          tagObj: list2,
+          testInfo: data[i].askInfo
+        });
+      }
+    }
+    ctx.response.body = {
+      "code": 200,
+      "data1": data1,
+      "data2": data2,
+      "msg": "查询成功",
+    };
+  });
 }

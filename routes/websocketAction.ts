@@ -44,37 +44,44 @@ export function websocketAction(router: Router): void {
         }];
         const sql = { $and: list };
         const res: any = await queryOne(sql, "user_relation");
-        const sql2 = { id: res._id };
-        const res2: any = await queryOne(sql2, "user_message");
-        if (res2) {
-          const data1 = { _id: res2._id };
-          const data2 = {
-            info: [...res2.info, {
-              id: parseInt(params.id),
-              msg: params.info,
-              time: new Date(),
-              status: true,
-            }],
-          };
-          await update(data1, data2, "user_message");
-          ctx.response.body = {
-            "code": 200,
-            "data": data2.info
-          };
+        if (res) {
+          const sql2 = { id: res._id };
+          const res2: any = await queryOne(sql2, "user_message");
+          if (res2) {
+            const data1 = { _id: res2._id };
+            const data2 = {
+              info: [...res2.info, {
+                id: parseInt(params.id),
+                msg: params.info,
+                time: new Date(),
+                status: true,
+              }],
+            };
+            await update(data1, data2, "user_message");
+            ctx.response.body = {
+              "code": 200,
+              "data": data2.info,
+            };
+          } else {
+            const sql3 = {
+              id: res._id,
+              info: [{
+                id: parseInt(params.id),
+                msg: params.info,
+                time: new Date(),
+                status: true,
+              }],
+            };
+            await add(sql3, "user_message");
+            ctx.response.body = {
+              "code": 200,
+              "data": sql3.info,
+            };
+          }
         } else {
-          const sql3 = {
-            id: res._id,
-            info: [{
-              id: parseInt(params.id),
-              msg: params.info,
-              time: new Date(),
-              status: true,
-            }],
-          };
-          await add(sql3, "user_message");
           ctx.response.body = {
-            "code": 200,
-            "data": sql3.info,
+            "code": 500,
+            "data": "对方已不是你好友！",
           };
         }
       },
