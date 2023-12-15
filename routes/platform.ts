@@ -127,6 +127,7 @@ export function platform(router: Router): void {
         img: item.img,
         tag: item.tag,
         online: item.online,
+        birthday: item.birthday,
       };
     });
     for (let i = 0; i < data.length; i++) {
@@ -281,6 +282,7 @@ export function platform(router: Router): void {
         img: data[ind].img,
         tag: data[ind].tag,
         tagObj: data3,
+        birthday: data[ind].birthday,
       }];
     }
     ctx.response.body = {
@@ -288,15 +290,9 @@ export function platform(router: Router): void {
       "rows": data2,
       "msg": "查询成功",
     };
-  }).get("/getInterestFriend", verifyToken, async (ctx): Promise<void> => { // 按兴趣获取一个好友
+  }).get("/getInterestFriend", verifyToken, async (ctx): Promise<void> => { // 按兴趣获取好友
     const params: any = helpers.getQuery(ctx);
-    const res0: any = await queryOne({ id: parseInt(params.id) }, "user");
-    const list0: any = [];
-    for (let i = 0; i < res0.tag.length; i++) {
-      list0.push({
-        tag: parseInt(res0.tag[i]),
-      });
-    }
+    const list0: any = [{ tag: parseInt(params.tagId) }];
     const sql0 = { $or: list0 };
     const res: any = await queryAll(sql0, "user");
     let sql: any = { ids: parseInt(params.id) };
@@ -313,14 +309,16 @@ export function platform(router: Router): void {
       list2.findIndex((item2: any) => item2 == item.id) == -1
     );
     const list3: any = res3.map((item: any) => item.recipient);
-    data = data.filter((item: any) =>
-      list3.findIndex((item2: number) => item2 == item.id) == -1
-    );
-    const count = data.length;
+    for (let i = 0; i < data.length; i++) {
+      if (list3.findIndex((item2: number) => item2 == data[i].id) != -1) {
+        data[i].status = 2;
+      } else {
+        data[i].status = 0;
+      }
+    }
     let data2: any = [];
-    if (count > 0) {
-      const ind = Math.round(Math.random() * (count - 1));
-      const arr = data[ind].tag.map((item: number) => {
+    for (let i = 0; i < data.length; i++) {
+      const arr = data[i].tag.map((item: number) => {
         return {
           id: item,
         };
@@ -330,14 +328,16 @@ export function platform(router: Router): void {
         $or: arr,
       };
       const data3: Document[] = await queryAll(sql2, "tag");
-      data2 = [{
-        id: data[ind].id,
-        email: data[ind].email,
-        username: data[ind].username,
-        img: data[ind].img,
-        tag: data[ind].tag,
+      data2.push({
+        id: data[i].id,
+        email: data[i].email,
+        username: data[i].username,
+        img: data[i].img,
+        tag: data[i].tag,
         tagObj: data3,
-      }];
+        birthday: data[i].birthday,
+        status: data[i].status,
+      });
     }
     ctx.response.body = {
       "code": 200,
@@ -442,7 +442,8 @@ export function platform(router: Router): void {
           img: res.img,
           tag: res.tag,
           tagObj: list2,
-          testInfo: data[i].askInfo
+          testInfo: data[i].askInfo,
+          birthday: res.birthday,
         });
       } else if (data[i].requestor == params.id) {
         const res: any = await queryOne({ id: data[i].recipient }, "user");
@@ -463,7 +464,8 @@ export function platform(router: Router): void {
           img: res.img,
           tag: res.tag,
           tagObj: list2,
-          testInfo: data[i].askInfo
+          testInfo: data[i].askInfo,
+          birthday: res.birthday,
         });
       }
     }

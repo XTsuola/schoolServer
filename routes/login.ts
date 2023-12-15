@@ -38,6 +38,8 @@ export function login(router: Router) {
         password: params.password,
         img: imgName,
         tag: params.tag,
+        idcard: params.idcard,
+        birthday: params.idcard.slice(6, 14),
         online: false,
         status: true,
       };
